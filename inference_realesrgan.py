@@ -4,6 +4,7 @@ import glob
 import os
 from basicsr.archs.rrdbnet_arch import RRDBNet
 from basicsr.utils.download_util import load_file_from_url
+import numpy as np
 
 from realesrgan import RealESRGANer
 from realesrgan.archs.srvgg_arch import SRVGGNetCompact
@@ -134,7 +135,11 @@ def main():
         imgname, extension = os.path.splitext(os.path.basename(path))
         print('Testing', idx, imgname)
 
-        img = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        img = cv2.imdecode(np.fromfile(path, np.uint8), cv2.IMREAD_COLOR) #img = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        if img is None:
+            print("  cv2.imread result None, continue")
+            continue
+        
         if len(img.shape) == 3 and img.shape[2] == 4:
             img_mode = 'RGBA'
         else:
@@ -159,8 +164,12 @@ def main():
                 save_path = os.path.join(args.output, f'{imgname}.{extension}')
             else:
                 save_path = os.path.join(args.output, f'{imgname}_{args.suffix}.{extension}')
-            cv2.imwrite(save_path, output)
+            imwriteUTF8(output, save_path, f'.{extension}') #cv2.imwrite(save_path, output)
 
+def imwriteUTF8(image, save_path, extension):
+    is_success, im_buf_arr = cv2.imencode(extension, image)
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    im_buf_arr.tofile(save_path) #imwrite(cropped_face, save_path)
 
 if __name__ == '__main__':
     main()
