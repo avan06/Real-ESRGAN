@@ -2,7 +2,7 @@
 
 basicsr>=1.4.2
 git+https://github.com/avan06/facexlib
-gfpgan>=1.3.5
+git+https://github.com/avan06/GFPGAN
 numpy
 opencv-python
 Pillow
