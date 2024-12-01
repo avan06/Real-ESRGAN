@@ -77,6 +77,12 @@ def main():
         model = SRVGGNetCompact(num_in_ch=3, num_out_ch=3, num_feat=64, num_conv=16, upscale=4, act_type='prelu')
         netscale = 4
         file_url = ['https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesr-animevideov3.pth']
+    elif args.model_name == '4x-AnimeSharp':  # 4x-AnimeSharp
+        model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=2)
+        #in_nc, out_nc, nf, nb, gc=32
+        #RRDBNet(3, 3, 64, 23, gc=32)
+        netscale = 4
+        file_url = ['https://mega.nz/folder/rdpkjZzC#eUXPed_vntJKLrB0wpeJ-w/file/qdQwAJSC']
     elif args.model_name == 'realesr-general-x4v3':  # x4 VGG-style model (S size)
         model = SRVGGNetCompact(num_in_ch=3, num_out_ch=3, num_feat=64, num_conv=32, upscale=4, act_type='prelu')
         netscale = 4
@@ -119,7 +125,7 @@ def main():
     if args.face_enhance:  # Use GFPGAN for face enhancement
         from gfpgan import GFPGANer
         face_enhancer = GFPGANer(
-            model_path='https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.3.pth',
+            model_path='https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.4.pth',
             upscale=args.outscale,
             arch='clean',
             channel_multiplier=2,
