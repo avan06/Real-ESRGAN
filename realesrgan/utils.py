@@ -36,13 +36,15 @@ class RealESRGANer():
                  pre_pad=10,
                  half=False,
                  device=None,
-                 gpu_id=None):
+                 gpu_id=None,
+                 model_dir=os.path.join(ROOT_DIR, 'weights')):
         self.scale = scale
         self.tile_size = tile
         self.tile_pad = tile_pad
         self.pre_pad = pre_pad
         self.mod_scale = None
         self.half = half
+        self.lock = threading.Lock() # Add a thread lock for thread safety
 
         # initialize model
         if gpu_id:
@@ -59,7 +61,7 @@ class RealESRGANer():
             # if the model_path starts with https, it will first download models to the folder: weights
             if model_path.startswith('https://'):
                 model_path = load_file_from_url(
-                    url=model_path, model_dir=os.path.join(ROOT_DIR, 'weights'), progress=True, file_name=None)
+                    url=model_path, model_dir=model_dir, progress=True, file_name=None)
             loadnet = torch.load(model_path, map_location=torch.device('cpu'), weights_only=True)
 
         # prefer to use params_ema
@@ -204,6 +206,7 @@ class RealESRGANer():
         else:
             max_range = 255
         img = img / max_range
+
         if len(img.shape) == 2:  # gray image
             img_mode = 'L'
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
@@ -219,12 +222,14 @@ class RealESRGANer():
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         # ------------------- process image (without the alpha channel) ------------------- #
-        self.pre_process(img)
-        if self.tile_size > 0:
-            self.tile_process()
-        else:
-            self.process()
-        output_img = self.post_process()
+        with self.lock:  # Lock to ensure thread safety
+            self.pre_process(img)
+            if self.tile_size > 0:
+                self.tile_process()
+            else:
+                self.process()
+            output_img = self.post_process()
+
         output_img = output_img.data.squeeze().float().cpu().clamp_(0, 1).numpy()
         output_img = np.transpose(output_img[[2, 1, 0], :, :], (1, 2, 0))
         if img_mode == 'L':
@@ -233,12 +238,14 @@ class RealESRGANer():
         # ------------------- process the alpha channel if necessary ------------------- #
         if img_mode == 'RGBA':
             if alpha_upsampler == 'realesrgan':
-                self.pre_process(alpha)
-                if self.tile_size > 0:
-                    self.tile_process()
-                else:
-                    self.process()
-                output_alpha = self.post_process()
+                with self.lock:  # Lock to ensure thread safety
+                    self.pre_process(alpha)
+                    if self.tile_size > 0:
+                        self.tile_process()
+                    else:
+                        self.process()
+                    output_alpha = self.post_process()
+
                 output_alpha = output_alpha.data.squeeze().float().cpu().clamp_(0, 1).numpy()
                 output_alpha = np.transpose(output_alpha[[2, 1, 0], :, :], (1, 2, 0))
                 output_alpha = cv2.cvtColor(output_alpha, cv2.COLOR_BGR2GRAY)
