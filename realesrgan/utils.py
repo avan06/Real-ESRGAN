@@ -28,7 +28,7 @@ class RealESRGANer():
 
     def __init__(self,
                  scale,
-                 model_path,
+                 model_path=None,
                  dni_weight=None,
                  model=None,
                  tile=0,
@@ -37,7 +37,8 @@ class RealESRGANer():
                  half=False,
                  device=None,
                  gpu_id=None,
-                 model_dir=os.path.join(ROOT_DIR, 'weights')):
+                 model_dir=os.path.join(ROOT_DIR, 'weights'),
+                 loadnet=None):
         self.scale = scale
         self.tile_size = tile
         self.tile_pad = tile_pad
@@ -57,7 +58,7 @@ class RealESRGANer():
             # dni
             assert len(model_path) == len(dni_weight), 'model_path and dni_weight should have the save length.'
             loadnet = self.dni(model_path[0], model_path[1], dni_weight)
-        else:
+        elif not loadnet or not isinstance(loadnet, dict):
             # if the model_path starts with https, it will first download models to the folder: weights
             if model_path.startswith('https://'):
                 model_path = load_file_from_url(
